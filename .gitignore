@@ -5,3 +5,8 @@ __pycache__/
 
 # Claude Code internal
 .claude/
+
+# OS 生成ファイル
+.DS_Store
+Thumbs.db
+Desktop.ini
