@@ -108,6 +108,57 @@ const snapshot = JSON.stringify(untouched.getState());
 untouched.solve();
 check('solve() は呼び出し元の状態を書き換えない', JSON.stringify(untouched.getState()) === snapshot);
 
-console.log(`\n平均 ${(totalLen / trials).toFixed(1)} 手 / 最大 ${maxLen} 手 / ` +
+console.log(`\nLBL: 平均 ${(totalLen / trials).toFixed(1)} 手 / 最大 ${maxLen} 手 / ` +
             `${((Date.now() - started) / trials).toFixed(1)} ms per solve`);
+
+// ── 4. 2 フェーズ法（web/two-phase.js）──────────────────────────────────────
+global.CubeSolver = CubeSolver;   // two-phase.js は cube-solver.js から手順表を取り込む
+// eslint-disable-next-line no-eval
+eval(fs.readFileSync(path.join(__dirname, 'web', 'two-phase.js'), 'utf8'));
+const TwoPhase = window.TwoPhaseSolver;
+
+const initStart = Date.now();
+TwoPhase.init();
+console.log(`\n2 フェーズ法の表の生成: ${Date.now() - initStart} ms`);
+
+let tpFail = 0, tpToken = 0, tpLen = 0, tpMax = 0, tpLong = 0;
+const tpStart = Date.now();
+for (let i = 0; i < trials; i++) {
+  const cube = new CubeSolver();
+  cube.scramble(25);
+  const scrambled = cube.getState();
+
+  const solution = TwoPhase.solve(scrambled);
+  if (!solution) { tpFail++; continue; }
+  for (const m of solution) if (!MOVES.includes(m)) tpToken++;
+  if (!applyTo(scrambled, solution).isSolved()) tpFail++;
+  if (solution.length > 30) tpLong++;
+  tpLen += solution.length;
+  tpMax = Math.max(tpMax, solution.length);
+}
+check(`2 フェーズ法: ランダム 25 手 × ${trials} を解く`, tpFail === 0, `${tpFail} 件が未完成`);
+check('2 フェーズ法: 手順に未知の記号が混ざらない', tpToken === 0, `${tpToken} 個`);
+check('2 フェーズ法: 30 手を超える解を返さない', tpLong === 0, `${tpLong} 件`);
+check('2 フェーズ法: 完成状態では手順が空', TwoPhase.solve(solved()).length === 0);
+
+const tpUntouched = new CubeSolver();
+tpUntouched.scramble(20);
+const tpSnapshot = JSON.stringify(tpUntouched.getState());
+TwoPhase.solve(tpUntouched.getState());
+check('2 フェーズ法: 渡した状態を書き換えない', JSON.stringify(tpUntouched.getState()) === tpSnapshot);
+
+let tpShort = 0;
+for (let n = 1; n <= 10; n++) {
+  for (let t = 0; t < 20; t++) {
+    const c = new CubeSolver();
+    c.scramble(n);
+    const before = c.getState();
+    const sol = TwoPhase.solve(before);
+    if (!sol || !applyTo(before, sol).isSolved()) tpShort++;
+  }
+}
+check('2 フェーズ法: 1〜10 手のスクランブル × 20', tpShort === 0, `${tpShort} 件が未完成`);
+
+console.log(`2 フェーズ法: 平均 ${(tpLen / (trials - tpFail)).toFixed(1)} 手 / 最大 ${tpMax} 手 / ` +
+            `${((Date.now() - tpStart) / trials).toFixed(1)} ms per solve`);
 process.exit(failures === 0 ? 0 : 1);
