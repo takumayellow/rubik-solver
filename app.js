@@ -48,6 +48,31 @@ document.addEventListener('DOMContentLoaded', () => {
   renderer.render(solver.getState())
   updateStatusUI()
 
+  // Building the two-phase tables takes ~0.35s. Get it out of the way in the
+  // background so the first Solve click doesn't pay for it.
+  if (window.TwoPhaseSolver) {
+    setTimeout(() => {
+      // A failure here is not fatal: solve() retries, and LBL covers us either way.
+      try { TwoPhaseSolver.init() } catch { /* handled at solve time */ }
+    }, 0)
+  }
+
+  /**
+   * Two-phase by default (~20 moves). Falls back to LBL (~130 moves) when it
+   * isn't loaded, finds nothing inside its time budget, or throws.
+   */
+  function computeSolution() {
+    if (window.TwoPhaseSolver) {
+      try {
+        const moves = TwoPhaseSolver.solve(solver.getState())
+        if (moves) return moves
+      } catch {
+        // Fall through — a solution that is long beats no solution at all.
+      }
+    }
+    return solver.solve()
+  }
+
   // ──────────────────────────────────────────────
   // UI helpers
   // ──────────────────────────────────────────────
@@ -222,7 +247,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (isAnimating || solver.isSolved()) return
 
     try {
-      solution = solver.solve()
+      solution = computeSolution()
     } catch (err) {
       // The solver verifies the cube before returning, so this means it gave up
       // rather than that it produced a wrong answer. Say so instead of freezing.
