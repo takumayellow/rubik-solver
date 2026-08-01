@@ -29,6 +29,17 @@
 
 ---
 
+## 関連: Cube Trainer（人間が解けるようになるための練習アプリ）
+
+このリポジトリのソルバーは「機械が最短で解く」ためのものです。**人間が CFOP を覚えながら解く**ための
+アプリは別サイトにあります。状態を入れると、いまどのフェーズ（Cross / F2L / OLL / PLL）にいて、
+次に何をすればいいかをテクニックの名前つきで示します。
+
+- **Cube Trainer**: <https://takumayellow.github.io/cube-trainer/>（リポジトリ: [takumayellow/cube-trainer](https://github.com/takumayellow/cube-trainer)）
+- 設計と今後の段階: [#6](https://github.com/takumayellow/rubik-solver/issues/6)
+
+---
+
 ## CLI の特徴
 
 | 機能 | 説明 |
