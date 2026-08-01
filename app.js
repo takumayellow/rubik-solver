@@ -221,7 +221,16 @@ document.addEventListener('DOMContentLoaded', () => {
   btnSolve.addEventListener('click', async () => {
     if (isAnimating || solver.isSolved()) return
 
-    solution = solver.solve()
+    try {
+      solution = solver.solve()
+    } catch (err) {
+      // The solver verifies the cube before returning, so this means it gave up
+      // rather than that it produced a wrong answer. Say so instead of freezing.
+      expandSolutionPanel()
+      solutionContent.innerHTML =
+        `<p class="no-solution">解法を見つけられませんでした: ${escapeHtml(String(err.message))}</p>`
+      return
+    }
     solveStep = 0
 
     // Expand solution panel and render chips
